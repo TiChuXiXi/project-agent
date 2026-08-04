@@ -1,0 +1,17 @@
+[
+  {
+    "id": 1,
+    "prompt": "初始化项目记忆",
+    "expected": "全新项目：完整创建 AGENTS.md / CONTEXT.md / LESSONS.md / .opencode/ 五层文件，模块清单与构建文件一致，无废弃模块混入"
+  },
+  {
+    "id": 2,
+    "prompt": "升级项目记忆",
+    "expected": "已有部分记忆文件的项目：检测结果表格全量逐项列出 C1-C7（含 C3 LESSONS.md、C5 save.md），缺失/过时项明确标记，绝不覆盖既有内容"
+  },
+  {
+    "id": 3,
+    "prompt": "给这个若依项目建立记忆（pom.xml 里 zby-car 等模块被注释掉了，但目录还在）",
+    "expected": "Maven 多模块项目：模块清单只含 pom.xml <modules> 实际启用的模块，注释掉的废弃模块被显式排除并标注，不进 AGENTS.md 项目结构"
+  }
+]

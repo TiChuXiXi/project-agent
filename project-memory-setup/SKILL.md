@@ -1,6 +1,6 @@
 ---
 name: project-memory-setup
-version: 2.2
+version: 2.3
 description: "Initialize OR upgrade AGENTS.md + CONTEXT.md + LESSONS.md + .opencode/ task memory system for a project. Use when user says '初始化项目记忆', 'setup project memory', '给项目建立记忆', '升级项目记忆', 'update project memory', '新项目配置', or when starting work on a project that lacks AGENTS.md/CONTEXT.md. Also use when user wants to enable cross-session AI memory for their project."
 ---
 
@@ -41,17 +41,41 @@ description: "Initialize OR upgrade AGENTS.md + CONTEXT.md + LESSONS.md + .openc
 
 ### 步骤 0：扫描项目 + 能力检测（判定模式，两种模式共用）
 
-执行以下操作：
+#### 0.1 扫描操作（按序执行）
 
 1. 读取根目录文件列表（`pom.xml` / `package.json` / `build.gradle` / `Cargo.toml` 等）
-2. 识别项目类型、语言、框架、构建工具；扫描一级子目录结构
-3. 执行 `git branch -a` 和 `git log --oneline -10` 了解分支和提交历史
-4. 按上方**能力清单**逐项检测：文件存在性 + 关键特征（如 AGENTS.md 是否已含 LESSONS 协议、opencode.json 的 instructions 是否含 LESSONS.md、save.md 是否含步骤 0）
-5. 判定模式：
-   - **全部缺失 → 模式 A（全新初始化）**
-   - **任一能力已存在 → 模式 B（升级补足）**
+2. 识别项目类型、语言、框架、构建工具
+3. **模块/目录结构识别——必须遵循"模块识别三规则"**（防止把废弃模块当活跃模块）：
+   - **规则 1（构建文件优先）**：Maven 项目必须以根 `pom.xml` 的 `<modules>` 标签为唯一权威；子目录存在于文件系统**不等于**该模块被启用。判定一个模块是否活跃 = 它出现在 `<modules>` 中且未被注释。
+   - **规则 2（注释即废弃）**：在 `<modules>` 或 `<dependencyManagement>` 中被 `<!-- ... -->` 注释掉的模块（如 `zby-car`）、以及 XML 注释块中列出的模块（如 `zby-finance`），一律判定为**废弃/未启用模块**，必须显式排除，禁止写入 AGENTS.md 的 Project Structure。同样规则适用于 Gradle（`settings.gradle` 中被注释的 `include` 行）。
+   - **规则 3（分栏输出）**：模块清单必须分两栏向用户展示——「✅ 已启用模块」（来自 `<modules>` 实际启用项）和「⛔ 已排除的废弃模块」（注释/未启用但目录仍在的项），并在确认环节请用户核对排除清单是否准确。
+4. 执行 `git branch -a` 和 `git log --oneline -10` 了解分支和提交历史
+5. 按上方**能力清单**逐项检测：文件存在性 + 关键特征（如 AGENTS.md 是否已含 LESSONS 协议、opencode.json 的 instructions 是否含 LESSONS.md、save.md 是否含步骤 0）
 
-**向用户确认**：展示项目信息 + 检测结果表格（哪些能力已具备/缺失/过时），确认走哪个模式。
+#### 0.2 能力检测输出模板（强制全量，禁止省略）
+
+检测结果**必须逐行输出全部 7 项能力**（C1-C7），每项标注 ✅ 已具备 / ❌ 缺失 / ⚠️ 过时，**禁止只挑部分能力汇报、禁止跳过 C3（LESSONS.md）和 C5（save.md）**。输出格式：
+
+```
+| 能力 | 文件 | 检测结果 | 关键特征 |
+|------|------|---------|---------|
+| C1 | AGENTS.md | ✅/❌/⚠️ | 含 LESSONS 协议？ |
+| C2 | CONTEXT.md | ✅/❌/⚠️ | 无 `<!-- TODO -->` 占位符未填？ |
+| C3 | LESSONS.md | ✅/❌/⚠️ | 含分类索引？ |
+| C4 | .opencode/opencode.json | ✅/❌/⚠️ | instructions 含 LESSONS.md？ |
+| C5 | .opencode/commands/save.md | ✅/❌/⚠️ | 含步骤 0 纠错检视？ |
+| C6 | .opencode/memory.md | ✅/❌/⚠️ | 非空？ |
+| C7 | .opencode/tasks/ | ✅/❌/⚠️ | index.md 含任务索引表头？ |
+```
+
+> 任何一项显示 ❌ 或 ⚠️，都必须在汇报中单独说明其影响（如 C3 缺失 → 教训无法自动归档）并列入待办，禁止静默忽略。
+
+#### 0.3 模式判定
+
+- **全部缺失 → 模式 A（全新初始化）**
+- **任一能力已存在 → 模式 B（升级补足）**
+
+**向用户确认**：展示项目信息 + 模块分栏清单 + 检测结果表格（C1-C7 全量），确认走哪个模式。
 
 > 🔴 CHECKPOINT：展示检测结果后**必须等待用户明确选择模式 A 或模式 B**，禁止自行判定后直接开工。
 
@@ -142,7 +166,7 @@ description: "Initialize OR upgrade AGENTS.md + CONTEXT.md + LESSONS.md + .openc
 | C1 AGENTS.md 无 LESSONS 协议 | 在文件末尾追加"# LESSONS 教训库强制使用协议"章节（内容取自 `assets/templates/AGENTS.md` 末尾），**不动原有任何规则** |
 | C2 CONTEXT.md 不完整 | 不自动改写领域语言（项目特定内容，AI 不可假设），仅提示用户是否补全 |
 | C3 LESSONS.md 缺失 | 从模板创建；已有则跳过 |
-| C4 opencode.json 的 instructions 缺 LESSONS.md | **合并数组**：在 `instructions` 数组中追加 `"LESSONS.md"`，保留用户的其他配置项（commands / mcp / agents 等） |
+| C4 opencode.json 的 instructions 缺 LESSONS.md | **合并数组**：在 `instructions` 数组中追加 `"LESSONS.md"`，**沿用现有条目的路径风格**（现有条目是相对路径则追加相对路径，是绝对路径则追加对应绝对路径），保留用户的其他配置项（commands / mcp / agents 等） |
 | C5 save.md 缺步骤 0 | 在文件开头"# Save Progress Command"标题后插入"## 0. 纠错检视（LESSONS 前置过滤）"段落（内容取自 `assets/templates/save.md`），保留原有步骤 |
 | C6 memory.md 缺失 | 从模板创建；已有则跳过（不合并历史决策） |
 | C7 tasks/ 结构缺失 | 缺失的部分（index.md / templates/）从模板补齐，**已存在的 task-xxx 文件夹一律不动** |
@@ -213,6 +237,7 @@ description: "Initialize OR upgrade AGENTS.md + CONTEXT.md + LESSONS.md + .openc
 | 8 | MCP 安装后 `list_projects` 验证失败 | 提示用户检查可执行文件路径和 `enabled` 配置 | 不阻塞记忆体系其余部分，仅标记 MCP 待修 |
 | 9 | 目标文件已存在但内容含用户手工改动 | 模式 B 规则原地合并，绝不整文件覆盖 | 若合并可能破坏用户内容，先备份为 `<file>.bak.YYYYMMDD-HHMM` 再合并 |
 | 10 | 写入时出现编码问题（乱码风险） | 检查写入工具是否强制 UTF-8 | 停止写入，报告编码问题，修复后重试 |
+| 11 | 项目无 `pom.xml` / `package.json` 等构建文件 | 跳过"模块识别三规则"，降级为纯目录扫描，并明确告知用户"未按构建文件校验模块" | 将目录清单完整列出，**询问用户**哪些目录是废弃/未启用模块后再写入 AGENTS.md |
 
 ---
 
@@ -230,6 +255,8 @@ description: "Initialize OR upgrade AGENTS.md + CONTEXT.md + LESSONS.md + .openc
 | 6 | 假设 MCP 可执行文件的位置 | 不同机器路径不同 | 询问用户提供路径或官方渠道获取 |
 | 7 | 扫描阶段读入全部代码文件 | 浪费上下文，拖慢流程 | 只读根目录清单、构建文件和一级子目录 |
 | 8 | 在步骤 0 检测后跳过用户确认直接开工 | 模式选择错误导致大量返工 | 🔴 等待用户明确选择模式 A 或 B |
+| 9 | 把目录中存在但构建文件未启用的模块当作活跃模块（如 pom.xml 已注释的 zby-car 目录仍在） | 废弃代码进入 AGENTS.md 结构，误导后续开发与检索 | 以 `<modules>`/`settings.gradle` 实际启用项为准，废弃模块显式排除并分栏展示 |
+| 10 | 能力检测结果只汇报部分项（跳过 C3 LESSONS.md / C5 save.md） | 缺失项被静默忽略，教训库/保存闭环建不起来 | 按 0.2 模板全量输出 C1-C7，任何 ❌/⚠️ 必须说明影响并列待办 |
 
 ---
 
