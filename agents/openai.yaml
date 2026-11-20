@@ -1,0 +1,4 @@
+interface:
+  display_name: "项目长期记忆"
+  short_description: "跨会话保存目标、共识与经验，恢复任务并定位代码"
+  default_prompt: "初始化或升级当前项目的长期记忆"
